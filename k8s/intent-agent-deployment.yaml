@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: intent-agent
-        image: intent-agent:latest  # Update with your registry/image
+        image: trahulprabhu38/intent-agent:v1-linux 
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080

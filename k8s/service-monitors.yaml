@@ -1,0 +1,88 @@
+# ServiceMonitor CRDs for Prometheus Operator (Optional - requires Prometheus Operator)
+# If you're using vanilla Prometheus (as in prometheus-deployment.yaml), you don't need these
+# These are only needed if you want to use Prometheus Operator for auto-discovery
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: sql-query-gen-monitor
+  namespace: default
+  labels:
+    app: sql-query-gen
+spec:
+  selector:
+    matchLabels:
+      app: sql-query-gen
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 15s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: intent-agent-monitor
+  namespace: default
+  labels:
+    app: intent-agent
+spec:
+  selector:
+    matchLabels:
+      app: intent-agent
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 15s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: sql-validator-monitor
+  namespace: default
+  labels:
+    app: sql-validator
+spec:
+  selector:
+    matchLabels:
+      app: sql-validator
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 15s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: column-prune-monitor
+  namespace: default
+  labels:
+    app: column-prune
+spec:
+  selector:
+    matchLabels:
+      app: column-prune
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 15s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: frontend-monitor
+  namespace: default
+  labels:
+    app: frontend
+spec:
+  selector:
+    matchLabels:
+      app: frontend
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 15s
