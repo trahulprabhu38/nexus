@@ -275,7 +275,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: alertmanager-config
-  namespace: monitoring
+  namespace: nexus
 data:
   alertmanager.yml: |
     global:

@@ -34,7 +34,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: prometheus
-  namespace: monitoring
+  namespace: nexus
 
 ---
 # ClusterRoleBinding for Prometheus
@@ -49,7 +49,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: prometheus
-  namespace: monitoring
+  namespace: nexus
 
 ---
 # ConfigMap for Prometheus configuration
@@ -57,7 +57,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-config
-  namespace: monitoring
+  namespace: nexus
 data:
   prometheus.yml: |
     global:
@@ -157,7 +157,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: prometheus-storage
-  namespace: monitoring
+  namespace: nexus
 spec:
   accessModes:
     - ReadWriteOnce
@@ -171,7 +171,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: prometheus
-  namespace: monitoring
+  namespace: nexus
   labels:
     app: prometheus
 spec:
@@ -236,7 +236,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: prometheus
-  namespace: monitoring
+  namespace: nexus
   labels:
     app: prometheus
 spec:

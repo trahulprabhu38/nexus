@@ -4,7 +4,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana-datasources
-  namespace: monitoring
+  namespace: nexus
 data:
   prometheus.yaml: |
     apiVersion: 1
@@ -24,7 +24,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana-dashboards-provider
-  namespace: monitoring
+  namespace: nexus
 data:
   dashboards.yaml: |
     apiVersion: 1
@@ -45,7 +45,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana-dashboard-nexus
-  namespace: monitoring
+  namespace: nexus
 data:
   nexus-services.json: |
     {
@@ -137,7 +137,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: grafana-storage
-  namespace: monitoring
+  namespace: nexus
 spec:
   accessModes:
     - ReadWriteOnce
@@ -151,7 +151,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: grafana
-  namespace: monitoring
+  namespace: nexus
   labels:
     app: grafana
 spec:
@@ -232,7 +232,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: grafana
-  namespace: monitoring
+  namespace: nexus
   labels:
     app: grafana
 spec:
