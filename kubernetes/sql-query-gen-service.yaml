@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: sql-query-generator
-  namespace: default
+  namespace: nexus
   labels:
     app: sql-query-generator
 spec:
@@ -24,7 +24,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: sql-query-generator-nodeport
-  namespace: default
+  namespace: nexus
   labels:
     app: sql-query-generator
 spec:

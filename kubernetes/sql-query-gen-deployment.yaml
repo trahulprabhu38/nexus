@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sql-query-generator
-  namespace: default
+  namespace: nexus
   labels:
     app: sql-query-generator
     version: v1

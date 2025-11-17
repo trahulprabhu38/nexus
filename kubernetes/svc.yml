@@ -4,7 +4,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgres-service
-  namespace: default
+  namespace: nexus
   labels:
     app: postgres
 spec:
@@ -23,7 +23,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: sql-validator-api-service
-  namespace: default
+  namespace: nexus
   labels:
     app: sql-validator-api
 spec:

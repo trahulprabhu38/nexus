@@ -4,7 +4,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres-deployment
-  namespace: default
+  namespace: nexus
   labels:
     app: postgres
 spec:
@@ -85,7 +85,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: sql-validator-api-deployment
-  namespace: default
+  namespace: nexus
   labels:
     app: sql-validator-api
 spec:
@@ -163,7 +163,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: postgres-pvc
-  namespace: default
+  namespace: nexus
 spec:
   accessModes:
     - ReadWriteOnce
@@ -180,7 +180,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: postgres-init-script
-  namespace: default
+  namespace: nexus
 data:
   init.sql: |
     -- Create tables

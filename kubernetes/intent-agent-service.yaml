@@ -5,6 +5,7 @@ metadata:
   namespace: nexus
   labels:
     app: intent-agent
+
 spec:
   type: NodePort 
   selector:

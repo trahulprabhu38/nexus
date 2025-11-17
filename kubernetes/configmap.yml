@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: sql-validator-config
-  namespace: default
+  namespace: nexus
 data:
   # Database configuration
   DB_HOST: "postgres-service"
