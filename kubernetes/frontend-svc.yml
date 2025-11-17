@@ -10,7 +10,7 @@ spec:
   type: NodePort
   ports:
     - port: 80
-      targetPort: 3000
+      targetPort: 80  # Fixed: frontend container runs on port 80 (nginx)
       protocol: TCP
   selector:
       type: pod

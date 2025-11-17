@@ -164,6 +164,7 @@ spec:
   resources:
     requests:
       storage: 10Gi
+  # Uses default storage class for dynamic provisioning
 
 ---
 # Prometheus Deployment

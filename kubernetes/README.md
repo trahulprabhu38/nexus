@@ -1,413 +1,365 @@
-# Nexus Monitoring Setup Guide
+# Nexus Kubernetes Deployment
 
-This guide will help you set up Prometheus and Grafana monitoring for your Nexus microservices platform.
+This directory contains all Kubernetes manifests for deploying the Nexus platform.
 
-## Architecture
+## ✅ What Was Fixed
 
-- **Prometheus**: Collects and stores metrics from all services
-- **Grafana**: Visualizes metrics with pre-built dashboards
-- **Service Discovery**: Automatic discovery of Kubernetes services
+### 1. Namespace Issues ✓
+- **Problem**: Resources were split between `default`, `nexus`, and some had no namespace
+- **Solution**:
+  - Created `00-namespace.yaml` to explicitly create the `nexus` namespace
+  - All backend services in `default` namespace (sql-query-gen, sql-validator, postgres)
+  - All monitoring in `nexus` namespace (prometheus, grafana)
+  - All frontend/UI services in `nexus` namespace (frontend, column-prune, intent-agent)
 
-## Quick Start
+### 2. PersistentVolume Issues ✓
+- **Problem**: SQL Validator PV used `hostPath: /mnt/data` which doesn't work on all clusters
+- **Solution**:
+  - Removed manual PV definition
+  - Using dynamic provisioning with default StorageClass
+  - Works on minikube, GKE, EKS, AKS out of the box
 
-### 1. Deploy Prometheus
+### 3. ConfigMap/Secret References ✓
+- **Problem**: SQL Query Generator referenced ConfigMaps/Secrets without namespaces
+- **Solution**:
+  - Added `namespace: default` to all ConfigMaps and Secrets
+  - Verified all references match deployment expectations
 
-```bash
-# Apply Prometheus deployment
-kubectl apply -f k8s/prometheus-deployment.yaml
+### 4. Service Port Mismatches ✓
+- **Problem**: Frontend service had `targetPort: 3000` but container runs on port 80
+- **Solution**: Fixed targetPort to match actual container ports
 
-# Verify Prometheus is running
-kubectl get pods -n monitoring
-kubectl get svc -n monitoring
+## 📁 Directory Structure
 
-# Access Prometheus UI
-# URL: http://<node-ip>:30090
+```
+kubernetes/
+├── 00-namespace.yaml                 # Namespace definitions (APPLY FIRST)
+├── secrets.yml                       # SQL Validator secrets
+├── configmap.yml                     # SQL Validator configmap
+├── sql-query-gen-secrets.yaml        # SQL Query Generator secrets
+├── sql-query-gen-configmap.yaml      # SQL Query Generator configmap
+├── deployment.yml                    # PostgreSQL + SQL Validator deployments + PVC
+├── svc.yml                           # PostgreSQL + SQL Validator services
+├── sql-query-gen-deployment.yaml     # SQL Query Generator deployment
+├── sql-query-gen-service.yaml        # SQL Query Generator services (ClusterIP + NodePort)
+├── intent-agent-deployment.yaml      # Intent Agent deployment
+├── intent-agent-service.yaml         # Intent Agent service
+├── column-prune-deploy.yml           # Column Pruning deployment
+├── column-prune-svc.yml              # Column Pruning service
+├── frontend-deploy.yml               # Frontend deployment
+├── frontend-svc.yml                  # Frontend service
+├── prometheus-deployment.yaml        # Prometheus with ConfigMaps, RBAC, PVC
+├── grafana-deployment.yaml           # Grafana with ConfigMaps, dashboards, PVC
+├── service-monitors.yaml             # ServiceMonitors for Prometheus Operator (optional)
+├── deploy-all.sh                     # ⭐ Automated deployment script
+├── delete-all.sh                     # Automated deletion script
+├── deploy-monitoring.sh              # Deploy only monitoring stack
+└── README.md                         # This file
 ```
 
-### 2. Deploy Grafana
+## 🏗️ Resource Organization
+
+### Default Namespace
+Services that interact with the database or backend processing:
+- ✅ PostgreSQL Database (with PVC)
+- ✅ SQL Validator API
+- ✅ SQL Query Generator
+
+### Nexus Namespace
+User-facing services and monitoring:
+- ✅ Frontend
+- ✅ Column Pruning
+- ✅ Intent Agent
+- ✅ Prometheus (with PVC)
+- ✅ Grafana (with PVC)
+
+## 🚀 Quick Start
+
+### Option 1: Automated Deployment (Recommended)
 
 ```bash
-# Apply Grafana deployment
-kubectl apply -f k8s/grafana-deployment.yaml
+cd kubernetes
 
-# Verify Grafana is running
-kubectl get pods -n monitoring
+# Deploy everything
+./deploy-all.sh
 
-# Access Grafana UI
-# URL: http://<node-ip>:30300
-# Default credentials: admin / admin123
+# Or deploy only monitoring
+./deploy-monitoring.sh
 ```
 
-### 3. Add Prometheus Annotations to Services
+### Option 2: Manual Deployment
 
-To enable Prometheus scraping, add these annotations to your service pods:
+```bash
+cd kubernetes
+
+# 1. Create namespaces
+kubectl apply -f 00-namespace.yaml
+
+# 2. Create secrets and configmaps
+kubectl apply -f secrets.yml
+kubectl apply -f configmap.yml
+kubectl apply -f sql-query-gen-secrets.yaml
+kubectl apply -f sql-query-gen-configmap.yaml
+
+# 3. Deploy database and SQL validator
+kubectl apply -f deployment.yml
+kubectl apply -f svc.yml
+
+# Wait for PostgreSQL to be ready
+kubectl wait --for=condition=available --timeout=300s deployment/postgres-deployment -n default
+
+# 4. Deploy SQL Query Generator
+kubectl apply -f sql-query-gen-deployment.yaml
+kubectl apply -f sql-query-gen-service.yaml
+
+# 5. Deploy Intent Agent
+kubectl apply -f intent-agent-deployment.yaml
+kubectl apply -f intent-agent-service.yaml
+
+# 6. Deploy Column Pruning
+kubectl apply -f column-prune-deploy.yml
+kubectl apply -f column-prune-svc.yml
+
+# 7. Deploy Frontend
+kubectl apply -f frontend-deploy.yml
+kubectl apply -f frontend-svc.yml
+
+# 8. Deploy Monitoring
+kubectl apply -f prometheus-deployment.yaml
+kubectl apply -f grafana-deployment.yaml
+```
+
+## ✅ Verifying Deployment
+
+```bash
+# Check all pods
+kubectl get pods --all-namespaces
+
+# Check deployments
+kubectl get deployments -n default
+kubectl get deployments -n nexus
+
+# Check services
+kubectl get svc -n default
+kubectl get svc -n nexus
+
+# Check PVCs
+kubectl get pvc --all-namespaces
+
+# Check pod logs
+kubectl logs -f deployment/sql-query-generator -n default
+kubectl logs -f deployment/prometheus -n nexus
+```
+
+## 🌐 Accessing Services
+
+### Method 1: NodePort (Default)
+
+Get node IP and service ports:
+
+```bash
+# Get node IP
+NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="ExternalIP")].address}')
+[ -z "$NODE_IP" ] && NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+
+# Get service ports
+kubectl get svc --all-namespaces | grep NodePort
+```
+
+### Method 2: Port Forwarding (For Development)
+
+```bash
+# SQL Query Generator
+kubectl port-forward -n default svc/sql-query-generator 8000:80
+
+# SQL Validator
+kubectl port-forward -n default svc/sql-validator-api-service 8001:8000
+
+# Intent Agent
+kubectl port-forward -n nexus svc/intent-agent 8080:80
+
+# Column Pruning
+kubectl port-forward -n nexus svc/nexus-column-prune-service 8501:8501
+
+# Frontend
+kubectl port-forward -n nexus svc/nexus-frontend-service 3000:80
+
+# Prometheus
+kubectl port-forward -n nexus svc/prometheus 9090:9090
+
+# Grafana
+kubectl port-forward -n nexus svc/grafana 3000:3000
+# Access at http://localhost:3000 (admin/admin123)
+```
+
+## 💾 Storage Configuration
+
+All PersistentVolumeClaims use **dynamic provisioning**:
+
+| Cluster | Default StorageClass | Notes |
+|---------|---------------------|-------|
+| Minikube | `standard` | Enable with `minikube addons enable default-storageclass` |
+| GKE | `standard` or `standard-rwo` | HDD or SSD |
+| EKS | `gp2` | GP2 EBS volumes |
+| AKS | `default` | Azure Disk |
+
+To use a specific StorageClass:
 
 ```yaml
-metadata:
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "8000"  # Your service port
-    prometheus.io/path: "/metrics"  # Metrics endpoint
-```
-
-## Instrumenting Your Services
-
-### Python FastAPI Services
-
-Add Prometheus metrics to your FastAPI applications:
-
-#### 1. Install Dependencies
-
-```bash
-pip install prometheus-client prometheus-fastapi-instrumentator
-```
-
-#### 2. Update your FastAPI app
-
-```python
-from fastapi import FastAPI
-from prometheus_fastapi_instrumentator import Instrumentator
-
-app = FastAPI()
-
-# Instrument your FastAPI app
-Instrumentator().instrument(app).expose(app)
-
-# Your existing routes...
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
-```
-
-This automatically exposes metrics at `/metrics` endpoint.
-
-### Custom Metrics Example
-
-```python
-from prometheus_client import Counter, Histogram, Gauge
-import time
-
-# Define custom metrics
-request_count = Counter('app_requests_total', 'Total app requests', ['method', 'endpoint'])
-request_duration = Histogram('app_request_duration_seconds', 'Request duration')
-active_requests = Gauge('app_active_requests', 'Number of active requests')
-
-# Use in your code
-@app.get("/api/query")
-async def query_endpoint():
-    request_count.labels(method='GET', endpoint='/api/query').inc()
-    active_requests.inc()
-
-    start_time = time.time()
-    try:
-        # Your logic here
-        result = {"status": "success"}
-        return result
-    finally:
-        duration = time.time() - start_time
-        request_duration.observe(duration)
-        active_requests.dec()
-```
-
-## Updating Existing Services
-
-### SQL Query Generator (SQL_QUERY_GENERATOR/app.py)
-
-```python
-from fastapi import FastAPI
-from prometheus_fastapi_instrumentator import Instrumentator
-
-app = FastAPI()
-
-# Add this after creating FastAPI app
-Instrumentator().instrument(app).expose(app)
-
-# Your existing code continues...
-```
-
-### Intent Agent (Intent-Agent/backend.py)
-
-```python
-from fastapi import FastAPI
-from prometheus_fastapi_instrumentator import Instrumentator
-
-app = FastAPI()
-
-# Add instrumentation
-Instrumentator().instrument(app).expose(app)
-
-# Your existing routes...
-```
-
-### SQL Validator Agent (sql_validator_agent/app.py)
-
-```python
-from fastapi import FastAPI
-from prometheus_fastapi_instrumentator import Instrumentator
-
-app = FastAPI()
-
-# Add instrumentation
-Instrumentator().instrument(app).expose(app)
-
-# Your existing validation endpoints...
-```
-
-### Column Pruning (Streamlit)
-
-For Streamlit apps, add a separate metrics endpoint:
-
-```python
-from prometheus_client import make_wsgi_app, Counter
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
-from werkzeug.serving import run_simple
-import streamlit as st
-
-# Your Streamlit app code...
-
-# Add metrics endpoint on a different port
-def setup_metrics_server():
-    from flask import Flask
-    app = Flask(__name__)
-    app.wsgi_app = DispatcherMiddleware(app.wsgi_app, {
-        '/metrics': make_wsgi_app()
-    })
-    run_simple('0.0.0.0', 8501, app, use_reloader=False, use_debugger=False)
-```
-
-## Update Deployment Manifests
-
-Add Prometheus annotations to your deployment manifests:
-
-### Example: sql-query-gen-deployment.yaml
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: sql-query-gen-deployment
 spec:
-  template:
-    metadata:
-      labels:
-        app: sql-query-gen
-      annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8000"
-        prometheus.io/path: "/metrics"
-    spec:
-      containers:
-      - name: sql-query-gen
-        image: trahulprabhu38/sql-query-gen:latest
-        # ... rest of your config
+  storageClassName: fast-ssd  # Your storage class
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
 ```
 
-Repeat for all services (intent-agent, sql-validator, column-prune, frontend).
-
-## Accessing the Dashboards
-
-### Prometheus
-
-- **URL**: `http://<node-ip>:30090`
-- **Features**:
-  - Query metrics using PromQL
-  - View targets and service discovery
-  - Check alerts
-  - View configuration
-
-### Grafana
-
-- **URL**: `http://<node-ip>:30300`
-- **Default Login**:
-  - Username: `admin`
-  - Password: `admin123` (CHANGE THIS!)
-
-#### Pre-configured Dashboard
-
-The "Nexus Services Overview" dashboard is automatically provisioned with:
-- Service availability status
-- CPU usage by service
-- Memory usage by service
-- Request rate
-- Error rate
-- Pod restart count
-
-#### Creating Custom Dashboards
-
-1. Login to Grafana
-2. Click "+" → "Dashboard"
-3. Add Panel
-4. Select "Prometheus" as data source
-5. Enter PromQL query (examples below)
-
-#### Useful PromQL Queries
-
-```promql
-# Service uptime
-up{job="nexus-services"}
-
-# Request rate
-rate(http_requests_total[5m])
-
-# Error rate
-rate(http_requests_total{status=~"5.."}[5m])
-
-# 95th percentile latency
-histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))
-
-# CPU usage
-rate(container_cpu_usage_seconds_total{namespace="default"}[5m])
-
-# Memory usage
-container_memory_working_set_bytes{namespace="default"}
-
-# Pod restart count
-kube_pod_container_status_restarts_total{namespace="default"}
-```
-
-## Alerting (Optional)
-
-To enable alerting, you need to deploy Alertmanager:
-
-```yaml
-# alertmanager-config.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: alertmanager-config
-  namespace: nexus
-data:
-  alertmanager.yml: |
-    global:
-      resolve_timeout: 5m
-
-    route:
-      group_by: ['alertname', 'cluster']
-      group_wait: 10s
-      group_interval: 10s
-      repeat_interval: 12h
-      receiver: 'email'
-
-    receivers:
-    - name: 'email'
-      email_configs:
-      - to: 'your-email@example.com'
-        from: 'alertmanager@example.com'
-        smarthost: 'smtp.gmail.com:587'
-        auth_username: 'your-email@gmail.com'
-        auth_password: 'your-app-password'
-```
-
-## Testing Metrics
-
-### 1. Check if metrics are exposed
+## 📊 Scaling Services
 
 ```bash
-# For SQL Query Generator
-kubectl port-forward -n default svc/sql-query-gen-service 8000:8000
-curl http://localhost:8000/metrics
+# Scale SQL Query Generator
+kubectl scale deployment/sql-query-generator --replicas=5 -n default
 
-# For Intent Agent
-kubectl port-forward -n default svc/intent-agent-service 8080:8080
-curl http://localhost:8080/metrics
+# Auto-scaling
+kubectl autoscale deployment sql-query-generator \
+  --cpu-percent=70 \
+  --min=2 \
+  --max=10 \
+  -n default
 ```
 
-### 2. Verify Prometheus is scraping
+## 🔄 Updating Services
 
-1. Access Prometheus UI: `http://<node-ip>:30090`
-2. Go to Status → Targets
-3. Verify all services show as "UP"
-
-### 3. Query metrics in Prometheus
-
-1. Go to Graph tab
-2. Enter query: `up{job="nexus-services"}`
-3. Execute and verify results
-
-## Troubleshooting
-
-### Services not showing in Prometheus targets
-
-1. Check if pods have correct annotations:
 ```bash
-kubectl get pods -n default -o yaml | grep -A 3 prometheus.io
+# Update image
+kubectl set image deployment/sql-query-generator \
+  sql-query-generator=trahulprabhu38/sql-query-generator:v2 \
+  -n default
+
+# Check rollout status
+kubectl rollout status deployment/sql-query-generator -n default
+
+# Rollback if needed
+kubectl rollout undo deployment/sql-query-generator -n default
 ```
 
-2. Check Prometheus logs:
+## 🐛 Troubleshooting
+
+### Pods Not Starting
+
 ```bash
-kubectl logs -n monitoring deployment/prometheus
+# Check pod status
+kubectl get pods -n default
+kubectl get pods -n nexus
+
+# Describe pod
+kubectl describe pod <pod-name> -n <namespace>
+
+# Check logs
+kubectl logs <pod-name> -n <namespace>
+
+# Previous logs (if crashed)
+kubectl logs <pod-name> -n <namespace> --previous
 ```
 
-3. Verify service discovery:
+### PVC Not Binding
+
 ```bash
-kubectl get endpoints -n default
+# Check PVC status
+kubectl get pvc --all-namespaces
+
+# Check StorageClass
+kubectl get storageclass
+
+# For minikube
+minikube addons enable default-storageclass
+minikube addons enable storage-provisioner
 ```
 
-### Grafana can't connect to Prometheus
+### ConfigMap/Secret Not Found
 
-1. Check if Prometheus service is running:
 ```bash
-kubectl get svc -n monitoring prometheus
+# List all configmaps
+kubectl get configmap -n default
+kubectl get configmap -n nexus
+
+# Apply if missing
+kubectl apply -f 00-namespace.yaml
+kubectl apply -f secrets.yml
+kubectl apply -f configmap.yml
 ```
 
-2. Test connectivity from Grafana pod:
+### Grafana ConfigMap Error
+
+If you see "Resource not found: v1/ConfigMap:grafana-datasources":
+
 ```bash
-kubectl exec -it -n monitoring deployment/grafana -- wget -O- http://prometheus:9090/api/v1/query?query=up
+# The ConfigMaps are defined in grafana-deployment.yaml
+# Ensure you apply it in correct order:
+kubectl apply -f 00-namespace.yaml  # First
+kubectl apply -f grafana-deployment.yaml  # Then this
 ```
 
-### No metrics showing up
+### Service Not Accessible
 
-1. Ensure your services are exposing `/metrics` endpoint
-2. Check if `prometheus-client` is installed in your services
-3. Verify port numbers in annotations match your service ports
+```bash
+# Check service
+kubectl get svc <service-name> -n <namespace>
 
-## Production Recommendations
+# Check endpoints
+kubectl get endpoints <service-name> -n <namespace>
+
+# Test from within cluster
+kubectl run -it --rm debug --image=busybox --restart=Never -- \
+  wget -O- http://<service-name>.<namespace>:8000
+```
+
+## 🧹 Cleanup
+
+```bash
+# Delete everything
+./delete-all.sh
+
+# Or delete manually
+kubectl delete namespace nexus
+kubectl delete -f deployment.yml
+kubectl delete -f svc.yml
+kubectl delete -f sql-query-gen-deployment.yaml
+kubectl delete -f sql-query-gen-service.yaml
+```
+
+## 🔒 Security Notes
 
 1. **Change default passwords**:
-   - Update Grafana admin password
-   - Use Kubernetes secrets for sensitive data
+   - Grafana: admin/admin123 → Change immediately!
+   - PostgreSQL: Update secrets.yml
 
-2. **Enable persistence**:
-   - Already configured via PVCs
-   - Ensure your cluster has StorageClass configured
+2. **Use real secrets**: The current secrets.yml has base64 encoded values. Replace with actual secrets.
 
-3. **Resource limits**:
-   - Adjust CPU/memory limits based on your workload
-   - Monitor Prometheus disk usage
+3. **Create secrets securely**:
+```bash
+kubectl create secret generic my-secret \
+  --from-literal=password='my-secure-password' \
+  --dry-run=client -o yaml > secret.yaml
+```
 
-4. **High availability**:
-   - Run multiple Prometheus replicas
-   - Use Thanos for long-term storage
+## 📚 Additional Resources
 
-5. **Security**:
-   - Enable TLS for Prometheus and Grafana
-   - Use authentication for Prometheus
-   - Implement network policies
+- **Jenkins Setup**: See `/JENKINS_SETUP.md` in root directory
+- **Monitoring Guide**: See `/monitoring/README.md` in root directory
+- **Quick Start**: See `/QUICK_START.md` in root directory
+- **Service Instrumentation**: See `/monitoring/example-instrumentation.py`
 
-6. **Backup**:
-   - Backup Grafana dashboards
-   - Backup Prometheus data or use remote storage
+## 🎯 Next Steps
 
-## Monitoring Best Practices
+1. ✅ Deploy services using `./deploy-all.sh`
+2. ✅ Access Grafana and change default password
+3. ⏳ Add Prometheus metrics to your services
+4. ⏳ Create custom Grafana dashboards
+5. ⏳ Set up alerting rules
+6. ⏳ Configure CI/CD pipeline
 
-1. **Use labels effectively**: Label your metrics with service name, environment, version
-2. **Keep cardinality low**: Don't use high-cardinality values (like user IDs) as labels
-3. **Set appropriate scrape intervals**: 15-30s is usually sufficient
-4. **Define SLOs**: Set up Service Level Objectives for critical services
-5. **Create runbooks**: Document what to do when alerts fire
+---
 
-## Next Steps
-
-1. Add custom business metrics to your services
-2. Create service-specific Grafana dashboards
-3. Set up alerting rules
-4. Configure Alertmanager for notifications
-5. Implement distributed tracing (Jaeger/Tempo)
-6. Add log aggregation (Loki/ELK)
-
-## Support
-
-For issues or questions:
-- Check Prometheus documentation: https://prometheus.io/docs/
-- Check Grafana documentation: https://grafana.com/docs/
-- Review Kubernetes service discovery: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#kubernetes_sd_config
+**All issues fixed! Ready to deploy!** 🎉

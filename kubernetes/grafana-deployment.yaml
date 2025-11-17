@@ -144,6 +144,7 @@ spec:
   resources:
     requests:
       storage: 5Gi
+  # Uses default storage class for dynamic provisioning
 
 ---
 # Grafana Deployment
