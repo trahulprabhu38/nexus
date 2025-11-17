@@ -158,21 +158,22 @@ spec:
           periodSeconds: 5
 
 ---
-# PersistentVolumeClaim for PostgreSQL (using dynamic provisioning)
+# PersistentVolumeClaim for PostgreSQL
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: postgres-pvc
   namespace: nexus
 spec:
+  storageClassName: local-storage  # For VPS/bare metal servers
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
-  # storageClassName will use the default storage class if not specified
-  # For minikube, this is typically 'standard'
-  # For cloud providers (GKE, EKS, AKS), they have default storage classes
+  selector:
+    matchLabels:
+      app: postgres
 
 ---
 # ConfigMap for init.sql script
