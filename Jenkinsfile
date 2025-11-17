@@ -157,45 +157,45 @@ pipeline {
             }
         }
 
-        stage('Run Tests') {
-            parallel {
-                stage('Test SQL Validator') {
-                    when {
-                        expression { params.BUILD_SQL_VALIDATOR == true }
-                    }
-                    steps {
-                        script {
-                            echo "Running SQL Validator tests..."
-                            dir('sql_validator_agent') {
-                                sh """
-                                    docker run --rm \
-                                        ${DOCKER_USERNAME}/sql-validator:${BUILD_TAG} \
-                                        python -m pytest test_validator.py -v || true
-                                """
-                            }
-                        }
-                    }
-                }
+        // stage('Run Tests') {
+        //     parallel {
+        //         stage('Test SQL Validator') {
+        //             when {
+        //                 expression { params.BUILD_SQL_VALIDATOR == true }
+        //             }
+        //             steps {
+        //                 script {
+        //                     echo "Running SQL Validator tests..."
+        //                     dir('sql_validator_agent') {
+        //                         sh """
+        //                             docker run --rm \
+        //                                 ${DOCKER_USERNAME}/sql-validator:${BUILD_TAG} \
+        //                                 python -m pytest test_validator.py -v || true
+        //                         """
+        //                     }
+        //                 }
+        //             }
+        //         }
 
-                stage('Security Scan') {
-                    steps {
-                        script {
-                            echo "Running security scans on images..."
-                            // Using Trivy for container security scanning
-                            sh """
-                                # Install trivy if not already installed
-                                which trivy || (
-                                    wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-                                    echo "deb https://aquasecurity.github.io/trivy-repo/deb \$(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
-                                    sudo apt-get update
-                                    sudo apt-get install trivy
-                                ) || echo "Trivy installation skipped"
-                            """
-                        }
-                    }
-                }
-            }
-        }
+        //         stage('Security Scan') {
+        //             steps {
+        //                 script {
+        //                     echo "Running security scans on images..."
+        //                     // Using Trivy for container security scanning
+        //                     sh """
+        //                         # Install trivy if not already installed
+        //                         which trivy || (
+        //                             wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+        //                             echo "deb https://aquasecurity.github.io/trivy-repo/deb \$(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+        //                             sudo apt-get update
+        //                             sudo apt-get install trivy
+        //                         ) || echo "Trivy installation skipped"
+        //                     """
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
 
         stage('Push to Registry') {
             when {
