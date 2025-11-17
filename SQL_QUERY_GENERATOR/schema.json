@@ -1,0 +1,4 @@
+{
+    "student": ["id", "name", "year"],
+    "marks": ["student_id", "subject", "marks"]
+}
