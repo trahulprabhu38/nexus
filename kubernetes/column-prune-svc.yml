@@ -1,17 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-    name: nexus-column-prune-service
-    namespace: nexus
-    labels:
-      type: column-prune-service
-      app:  nexus-project
+  name: nexus-column-prune-service
+  namespace: nexus
+  labels:
+    app: nexus-column-prune
 spec:
   type: NodePort
   ports:
     - port: 80
-      targetPort: 3000
+      targetPort: 8501
       protocol: TCP
   selector:
-      type: pod
-      app: nexus-column-prone-project  
+    app: nexus-column-prune

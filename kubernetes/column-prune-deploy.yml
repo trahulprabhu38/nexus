@@ -4,14 +4,12 @@ metadata:
   name: nexus-column-prune-deploy
   namespace: nexus
   labels:
-    type: column-prune-deployment
-    app: nexus-project
+    app: nexus-column-prune
 spec:
   replicas: 3
   selector:
     matchLabels:
-      type: column-prune-pod
-      app: nexus-column-prone-project      
+      app: nexus-column-prune
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -20,19 +18,12 @@ spec:
   template:
     metadata:
       labels:
-        type: pod
-        app: nexus-column-prone-project        
+        app: nexus-column-prune
     spec:
       containers:
-        - name: nexus-frontend
-          image: trahulprabhu38/column-pruning:v1-linux                    
-          imagePullPolicy: Always 
+        - name: nexus-column-prune
+          image: trahulprabhu38/column-pruning:v1-linux
+          imagePullPolicy: Always
           ports:
             - containerPort: 8501
           resources: {}
-
-
-
-
-    
-  
