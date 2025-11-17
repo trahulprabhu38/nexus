@@ -1,7 +1,0 @@
-# Add these dependencies to your service's requirements.txt
-
-# Prometheus client library for Python
-prometheus-client==0.19.0
-
-# FastAPI instrumentation for automatic metrics
-prometheus-fastapi-instrumentator==6.1.0
