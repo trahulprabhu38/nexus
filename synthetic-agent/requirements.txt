@@ -1,0 +1,7 @@
+streamlit
+openai
+transformers
+torch
+sqlalchemy
+pydantic
+pytest

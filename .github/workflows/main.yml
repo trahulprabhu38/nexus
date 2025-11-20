@@ -1,0 +1,61 @@
+name: SonarQube Analysis
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  sonar:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    # Node setup (for frontend + node-based agents)
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
+
+    - name: Install Node deps (ignore missing folders)
+      run: |
+        for dir in frontend "Intent-Agent" "SQL_QUERY_GENERATOR" "column pruning" sql_validator_agent; do
+          if [ -d "$dir" ] && [ -f "$dir/package.json" ]; then
+            echo "Installing Node deps in $dir"
+            cd "$dir"
+            npm install --legacy-peer-deps || true
+            cd -
+          fi
+        done
+
+    # Python env setup (for your Python-based agents)
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install Python deps (ignore missing folders)
+      run: |
+        for dir in frontend "Intent-Agent" "SQL_QUERY_GENERATOR" "column pruning" sql_validator_agent; do
+          if [ -d "$dir" ] && [ -f "$dir/requirements.txt" ]; then
+            echo "Installing Python deps in $dir"
+            pip install -r "$dir/requirements.txt" || true
+          fi
+        done
+
+    - name: SonarQube Scan
+      uses: sonarsource/sonarqube-scan-action@v2
+      env:
+        SONAR_TOKEN: 
+        SONAR_HOST_URL: "http://YOUR-IP-OR-DOMAIN:9000"
+
+    - name: SonarQube Quality Gate
+      uses: sonarsource/sonarqube-quality-gate-action@v1
+      timeout-minutes: 5
+      env:
+        SONAR_TOKEN: 

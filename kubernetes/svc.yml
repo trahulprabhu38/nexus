@@ -4,7 +4,7 @@
 # kind: Service
 # metadata:
 #   name: postgres-service
-#   namespace: nexus
+#   namespace: nexus1
 #   labels:
 #     app: postgres
 # spec:
@@ -23,7 +23,7 @@
 # kind: Service
 # metadata:
 #   name: sql-validator-api-service
-#   namespace: nexus
+#   namespace: nexus1
 #   labels:
 #     app: sql-validator-api
 # spec:

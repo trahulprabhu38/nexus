@@ -4,7 +4,7 @@
 # kind: Deployment
 # metadata:
 #   name: postgres-deployment
-#   namespace: nexus
+#   namespace: nexus1
 #   labels:
 #     app: postgres
 # spec:
@@ -85,7 +85,7 @@
 # kind: Deployment
 # metadata:
 #   name: sql-validator-api-deployment
-#   namespace: nexus
+#   namespace: nexus1
 #   labels:
 #     app: sql-validator-api
 # spec:
@@ -163,7 +163,7 @@
 # kind: PersistentVolumeClaim
 # metadata:
 #   name: postgres-pvc
-#   namespace: nexus
+#   namespace: nexus1
 # spec:
 #   storageClassName: local-storage  # For VPS/bare metal servers
 #   accessModes:
@@ -181,7 +181,7 @@
 # kind: ConfigMap
 # metadata:
 #   name: postgres-init-script
-#   namespace: nexus
+#   namespace: nexus1
 # data:
 #   init.sql: |
 #     -- Create tables
