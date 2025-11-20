@@ -35,7 +35,6 @@ spec:
   - name: http
     port: 80
     targetPort: 8000
-    nodePort: 30080  # Access via <NodeIP>:30080 (range: 30000-32767)
     protocol: TCP
 
 ---
@@ -56,3 +55,4 @@ spec:
 #     port: 80
 #     targetPort: 8000
 #     protocol: TCP
+
