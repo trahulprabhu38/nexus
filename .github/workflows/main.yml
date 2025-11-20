@@ -51,11 +51,11 @@ jobs:
     - name: SonarQube Scan
       uses: sonarsource/sonarqube-scan-action@v2
       env:
-        SONAR_TOKEN: 
-        SONAR_HOST_URL: "http://YOUR-IP-OR-DOMAIN:9000"
+        SONAR_TOKEN: sqa_1778059671fc916b45d77cdc87fa4a4115895d1a
+        SONAR_HOST_URL: "http://185.196.251.236:9000"
 
     - name: SonarQube Quality Gate
       uses: sonarsource/sonarqube-quality-gate-action@v1
       timeout-minutes: 5
       env:
-        SONAR_TOKEN: 
+        SONAR_TOKEN: sqa_1778059671fc916b45d77cdc87fa4a4115895d1a
